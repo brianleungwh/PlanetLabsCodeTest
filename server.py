@@ -96,6 +96,7 @@ def delete_group(groupname):
 
     # remove group from groups
     del groups[groupname]
+    return 'Group deleted', 200
 
 
 
