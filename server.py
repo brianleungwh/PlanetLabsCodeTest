@@ -18,24 +18,23 @@ def is_valid(data):
         and "userid" in data 
         and "groups" in data)
 
-@app.route('users', methods=['POST'])
+@app.route('/users', methods=['POST'])
 def create_new_user():
-    if request == 'POST':
+    if request.method == 'POST':
         user = request.get_json()
-        if !is_valid(user):
+        userid = user['userid']
+        if not is_valid(user):
             return 'Invalid user record', 400
-        if user[userid] in users:
+        if userid in users:
             return 'User already exists', 409
         first_name = user['first_name']
         last_name = user['last_name']
-        userid = user['userid']
-        user_groups = set(user[groups])
+        user_groups = set(user['groups'])
         user = User(first_name, last_name, userid, user_groups)
         users[userid] = user
         for group in user_groups:
             groups[group].add(userid)
         return 'User created', 201
-
 
 @app.route('/users/<userid>', methods=['GET', 'DELETE', 'PUT'])
 def users_handler(userid):
