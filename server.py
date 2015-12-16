@@ -54,7 +54,10 @@ def groups_handler(groupname):
         return retrieve_group_members(groupname)
     if request.method == 'PUT':
         members = request.get_json()['members']
-        return update_memebership(groupname, members)
+        return update_group_memebership(groupname, members)
+    if request.method == 'DELETE':
+        return delete_group(groupname)
+
 
 def retrieve_group_members(groupname):
     if groupname in groups:
@@ -63,18 +66,37 @@ def retrieve_group_members(groupname):
     else:
         return 'Group does not exists', 404
 
-def update_membership(groupname, members):
+def update_group_membership(groupname, members):
+    if groupname not in groups:
+        return 'Group does not exists', 404
+    new_memebership = set(members)
     # find users that are in the old list but not in the new list
     # and remove groupname from their groups
-    #
+    to_remove_from = groups[groupname].difference(new_memebership)
+    for user in to_remove_from:
+        users[user].groups.discard(groupname)
+
     # find users that are in the new list but not in the old list 
     # and add groupname to their groups
+    to_add_to = new_memebership.difference(groups[groupname])
+    for user in to_add_to:
+        users[user].groups.add(groupname)
 
-    old_members = groups[groupname]
-
-
-
+    # replace group
     groups[groupname] = set(members)
+    return 'Group memberships updated', 200
+
+def delete_group(groupname):
+    if groupname not in groups:
+        return 'Group does not exists', 404
+
+    # remove group from users' group set
+    for user in groups[groupname]:
+        users[user].groups.discard(groupname)
+
+    # remove group from groups
+    del groups[groupname]
+
 
 
 @app.route('/groups', methods=['POST'])
@@ -104,24 +126,23 @@ def update_user(userid, new_data):
         user.first_name = new_data['first_name']
         user.last_name = new_data['last_name']
         user.userid = new_data['userid']
-        # handle group reference
+        # handle group references
         groups_to_remove_from = user.groups.difference(new_data['groups'])
         groups_to_add_to = set(new_data['groups']).difference(user.groups)
-        update_groups(userid, groups_to_remove_from, groups_to_add_to)
+
+        for group in groups_to_remove_from:
+            groups[group].discard(userid)
+
+        for group in groups_to_add_to:
+            if group not in groups:
+                groups[group] = set()
+            groups[group].add(userid)
+
         user.groups = new_data['groups']
 
         return 'User updated successfully', 200
     else:
         return 'User does not exists or post body is invalid', 404
-
-def update_groups(userid, groups_to_remove_from, groups_to_add_to):
-    for group in groups_to_remove_from:
-            groups[group].discard(userid)
-
-    for group in groups_to_add_to:
-        if group not in groups:
-            groups[group] = set()
-        groups[group].add(userid)
     
 def delete_user(userid):
     if userid in users:
