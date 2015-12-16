@@ -33,18 +33,59 @@ def create_new_user():
         user = User(first_name, last_name, userid, user_groups)
         users[userid] = user
         for group in user_groups:
+            if group not in groups:
+                groups[group] = set()
             groups[group].add(userid)
         return 'User created', 201
 
-@app.route('/users/<userid>', methods=['GET', 'DELETE', 'PUT'])
+@app.route('/users/<userid>', methods=['GET', 'PUT', 'DELETE'])
 def users_handler(userid):
     if request.method == 'GET':
         return retrieve_user(userid)
-    if request.method == 'DELETE':
-        return delete_user(userid)
     if request.method == 'PUT':
         new_data = request.get_json()
         return update_user(userid, new_data)
+    if request.method == 'DELETE':
+        return delete_user(userid)
+
+@app.route('/groups/<groupname>', methods=['GET', 'PUT', 'DELETE'])
+def groups_handler(groupname):
+    if request.method == 'GET':
+        return retrieve_group_members(groupname)
+    if request.method == 'PUT':
+        members = request.get_json()['members']
+        return update_memebership(groupname, members)
+
+def retrieve_group_members(groupname):
+    if groupname in groups:
+        response_obj = jsonify(members=list(groups[groupname]))
+        return response_obj, 200
+    else:
+        return 'Group does not exists', 404
+
+def update_membership(groupname, members):
+    # find users that are in the old list but not in the new list
+    # and remove groupname from their groups
+    #
+    # find users that are in the new list but not in the old list 
+    # and add groupname to their groups
+
+    old_members = groups[groupname]
+
+
+
+    groups[groupname] = set(members)
+
+
+@app.route('/groups', methods=['POST'])
+def create_new_group():
+    if request.method == 'POST':
+        json = request.get_json()
+        new_group_name = json[name]
+        if new_group_name in groups:
+            return 'Group already exists', 409
+        groups[new_group_name] = set()
+        return 'New group created', 201
 
 def retrieve_user(userid):
     if userid in users:
