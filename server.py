@@ -3,10 +3,6 @@ from user import User
 
 app = Flask(__name__)
 
-# dummy user for test
-# jsmith = User("Joe", "Smith", "jsmith", {"admins", "users"})
-
-
 # main cached data
 users = {}
 groups = {}
@@ -38,6 +34,16 @@ def create_new_user():
             groups[group].add(userid)
         return 'User created', 201
 
+@app.route('/groups', methods=['POST'])
+def create_new_group():
+    if request.method == 'POST':
+        json = request.get_json()
+        new_group_name = json['name']
+        if new_group_name in groups:
+            return 'Group already exists', 409
+        groups[new_group_name] = set()
+        return 'New group created', 201
+
 @app.route('/users/<userid>', methods=['GET', 'PUT', 'DELETE'])
 def users_handler(userid):
     if request.method == 'GET':
@@ -58,58 +64,7 @@ def groups_handler(groupname):
     if request.method == 'DELETE':
         return delete_group(groupname)
 
-
-def retrieve_group_members(groupname):
-    if groupname in groups:
-        response_obj = jsonify(members=list(groups[groupname]))
-        return response_obj, 200
-    else:
-        return 'Group does not exists', 404
-
-def update_group_membership(groupname, members):
-    if groupname not in groups:
-        return 'Group does not exists', 404
-    new_memebership = set(members)
-    # find users that are in the old list but not in the new list
-    # and remove groupname from their groups
-    to_remove_from = groups[groupname].difference(new_memebership)
-    for user in to_remove_from:
-        users[user].groups.discard(groupname)
-
-    # find users that are in the new list but not in the old list 
-    # and add groupname to their groups
-    to_add_to = new_memebership.difference(groups[groupname])
-    for user in to_add_to:
-        users[user].groups.add(groupname)
-
-    # replace group
-    groups[groupname] = set(members)
-    return 'Group memberships updated', 200
-
-def delete_group(groupname):
-    if groupname not in groups:
-        return 'Group does not exists', 404
-
-    # remove group from users' group set
-    for user in groups[groupname]:
-        users[user].groups.discard(groupname)
-
-    # remove group from groups
-    del groups[groupname]
-    return 'Group deleted', 200
-
-
-
-@app.route('/groups', methods=['POST'])
-def create_new_group():
-    if request.method == 'POST':
-        json = request.get_json()
-        new_group_name = json['name']
-        if new_group_name in groups:
-            return 'Group already exists', 409
-        groups[new_group_name] = set()
-        return 'New group created', 201
-
+### User Handlers
 def retrieve_user(userid):
     if userid in users:
         user = users[userid]
@@ -157,6 +112,45 @@ def delete_user(userid):
     else:
         return 'User does not exist', 404
 
+### Groups Handlers
+def retrieve_group_members(groupname):
+    if groupname in groups:
+        response_obj = jsonify(members=list(groups[groupname]))
+        return response_obj, 200
+    else:
+        return 'Group does not exists', 404
+
+def update_group_membership(groupname, members):
+    if groupname not in groups:
+        return 'Group does not exists', 404
+    new_memebership = set(members)
+    # find users that are in the old list but not in the new list
+    # and remove groupname from their groups
+    to_remove_from = groups[groupname].difference(new_memebership)
+    for user in to_remove_from:
+        users[user].groups.discard(groupname)
+
+    # find users that are in the new list but not in the old list 
+    # and add groupname to their groups
+    to_add_to = new_memebership.difference(groups[groupname])
+    for user in to_add_to:
+        users[user].groups.add(groupname)
+
+    # replace group
+    groups[groupname] = set(members)
+    return 'Group memberships updated', 200
+
+def delete_group(groupname):
+    if groupname not in groups:
+        return 'Group does not exists', 404
+
+    # remove group from users' group set
+    for user in groups[groupname]:
+        users[user].groups.discard(groupname)
+
+    # remove group from groups
+    del groups[groupname]
+    return 'Group deleted', 200
 
 
 if __name__ == '__main__':
