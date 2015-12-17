@@ -54,7 +54,7 @@ def groups_handler(groupname):
         return retrieve_group_members(groupname)
     if request.method == 'PUT':
         members = request.get_json()['members']
-        return update_group_memebership(groupname, members)
+        return update_group_membership(groupname, members)
     if request.method == 'DELETE':
         return delete_group(groupname)
 
@@ -104,7 +104,7 @@ def delete_group(groupname):
 def create_new_group():
     if request.method == 'POST':
         json = request.get_json()
-        new_group_name = json[name]
+        new_group_name = json['name']
         if new_group_name in groups:
             return 'Group already exists', 409
         groups[new_group_name] = set()
