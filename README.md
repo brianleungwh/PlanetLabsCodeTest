@@ -15,4 +15,5 @@ $ python server_tests.py
 $ python server.py
 ```
 
-This application is developed with python2.7
+The app will be available at http://127.0.0.1:5000
+P.S. This application is developed with python2.7
