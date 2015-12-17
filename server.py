@@ -4,12 +4,12 @@ from user import User
 app = Flask(__name__)
 
 # dummy user for test
-jsmith = User("Joe", "Smith", "jsmith", {"admins", "users"})
+# jsmith = User("Joe", "Smith", "jsmith", {"admins", "users"})
 
 
 # main cached data
-users = {"jsmith": jsmith}
-groups = {"admins": {"jsmith"}, "users": {"jsmith"}}
+users = {}
+groups = {}
 
 
 def is_valid(data):
@@ -128,8 +128,9 @@ def update_user(userid, new_data):
         user.last_name = new_data['last_name']
         user.userid = new_data['userid']
         # handle group references
-        groups_to_remove_from = user.groups.difference(new_data['groups'])
-        groups_to_add_to = set(new_data['groups']).difference(user.groups)
+        new_groups = set(new_data['groups'])
+        groups_to_remove_from = user.groups.difference(new_groups)
+        groups_to_add_to = new_groups.difference(user.groups)
 
         for group in groups_to_remove_from:
             groups[group].discard(userid)
@@ -139,7 +140,7 @@ def update_user(userid, new_data):
                 groups[group] = set()
             groups[group].add(userid)
 
-        user.groups = new_data['groups']
+        user.groups = new_groups
 
         return 'User updated successfully', 200
     else:
@@ -155,8 +156,6 @@ def delete_user(userid):
         return 'User has been deleted from data store', 200
     else:
         return 'User does not exist', 404
-
-
 
 
 
