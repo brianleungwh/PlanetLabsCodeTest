@@ -5,21 +5,21 @@ app = Flask(__name__)
 app.config.from_pyfile('config.py')
 db = SQLAlchemy(app)
 
+user_group = db.Table('user_group',
+    db.Column('userid', db.String(30), db.ForeignKey('user.userid')),
+    db.Column('group_name', db.String(30), db.ForeignKey('group.name'))
+)
 
 class User(db.Model):
     userid = db.Column(db.String(30), primary_key=True)
     first_name = db.Column(db.String(30))
     last_name = db.Column(db.String(30))
-    groups = db.relationship('Group', backref='user',
-                             lazy='dynamic')
+    groups = db.relationship('Group', secondary=user_group,
+                backref=db.backref('users', lazy='dynamic'))
 
 class Group(db.Model):
     name = db.Column(db.String(30), primary_key=True)
 
-user_group = db.Table('user_group',
-    db.Column('userid', db.String(30), db.ForeignKey('user.userid')),
-    db.Column('group_name', db.String(30), db.ForeignKey('group.name'))
-)
 
 def is_valid(data):
     return ("first_name" in data 
