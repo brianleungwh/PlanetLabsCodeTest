@@ -2,7 +2,7 @@ from flask import json, jsonify
 import server
 import unittest
 
-class ServerTests(unittest.TestCase):
+class AppTests(unittest.TestCase):
 
     def setUp(self):
         self.app = server.app.test_client()
