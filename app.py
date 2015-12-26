@@ -17,8 +17,44 @@ class User(db.Model):
     groups = db.relationship('Group', secondary=user_group,
                 backref=db.backref('users', lazy='dynamic'))
 
+    def __init__(self, userid, first_name, last_name):
+        self.userid = userid
+        self.first_name = first_name
+        self.last_name = last_name
+
+    def add(self, user):
+        db.session.add(user)
+        return session_commit()
+
+    def delete(self, user):
+        db.session.delete(user)
+        return session_commit()
+
+
 class Group(db.Model):
     name = db.Column(db.String(30), primary_key=True)
+
+    def __init__(self, name):
+        self.name = name
+
+    def add(self, group):
+        db.session.add(group)
+        return session_commit()
+
+    def delete(self, group):
+        db.session.delete(group)
+        return session_commit()
+
+
+def session_commit():
+    try:
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        error = str(e)
+        return error
+
+db.create_all()
 
 
 def is_valid(data):
@@ -27,25 +63,36 @@ def is_valid(data):
         and "userid" in data 
         and "groups" in data)
 
-# @app.route('/users', methods=['POST'])
-# def create_new_user():
-#     if request.method == 'POST':
-#         user = request.get_json()
-#         userid = user['userid']
-#         if not is_valid(user):
-#             return 'Invalid user record', 400
-#         if userid in users:
-#             return 'User already exists', 409
-#         first_name = user['first_name']
-#         last_name = user['last_name']
-#         user_groups = set(user['groups'])
-#         user = User(first_name, last_name, userid, user_groups)
-#         users[userid] = user
-#         for group in user_groups:
-#             if group not in groups:
-#                 groups[group] = set()
-#             groups[group].add(userid)
-#         return 'User created', 201
+@app.route('/users', methods=['POST'])
+def create_new_user():
+    user = request.get_json()
+    userid = user['userid']
+    if not is_valid(user):
+        return 'Invalid user record', 400
+    if User.query.get(userid) is not None:
+        return 'User already exists', 409
+    first_name = user['first_name']
+    last_name = user['last_name']
+    groups = user['groups']
+    # create model instance
+    user = User(userid, first_name, last_name)
+    # if new group is created during the creation of a new user,
+    # add association
+    for group in groups:
+        group = Group.query.get(group)
+        if group is None:
+            # if group doesn't exist already, create it
+            group = Group(group)
+        # add association
+        user.groups.append(group)
+
+    # add user to db
+    db.session.add(user)
+    # since user is associated with groups instances, groups that 
+    # did not already exists will be automatically added
+    db.session.commit()
+
+    return 'User created', 201
 
 # @app.route('/groups', methods=['POST'])
 # def create_new_group():
