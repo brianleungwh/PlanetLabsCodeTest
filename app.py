@@ -45,6 +45,9 @@ class Group(db.Model):
         db.session.delete(group)
         return session_commit()
 
+    def __str__(self):
+        return self.name
+
 
 def session_commit():
     try:
@@ -66,18 +69,19 @@ def is_valid(data):
 @app.route('/users', methods=['POST'])
 def create_new_user():
     user = request.get_json()
-    userid = user['userid']
     if not is_valid(user):
         return 'Invalid user record', 400
+
+    userid = user['userid']
     if User.query.get(userid) is not None:
         return 'User already exists', 409
     first_name = user['first_name']
     last_name = user['last_name']
     groups = user['groups']
+
     # create model instance
     user = User(userid, first_name, last_name)
-    # if new group is created during the creation of a new user,
-    # add association
+    
     for group in groups:
         group = Group.query.get(group)
         if group is None:
@@ -104,15 +108,15 @@ def create_new_user():
 #         groups[new_group_name] = set()
 #         return 'New group created', 201
 
-# @app.route('/users/<userid>', methods=['GET', 'PUT', 'DELETE'])
-# def users_handler(userid):
-#     if request.method == 'GET':
-#         return retrieve_user(userid)
-#     if request.method == 'PUT':
-#         new_data = request.get_json()
-#         return update_user(userid, new_data)
-#     if request.method == 'DELETE':
-#         return delete_user(userid)
+@app.route('/users/<userid>', methods=['GET', 'PUT', 'DELETE'])
+def users_handler(userid):
+    if request.method == 'GET':
+        return retrieve_user(userid)
+    # if request.method == 'PUT':
+    #     new_data = request.get_json()
+    #     return update_user(userid, new_data)
+    # if request.method == 'DELETE':
+    #     return delete_user(userid)
 
 # @app.route('/groups/<groupname>', methods=['GET', 'PUT', 'DELETE'])
 # def groups_handler(groupname):
@@ -125,16 +129,16 @@ def create_new_user():
 #         return delete_group(groupname)
 
 # ### User Handlers
-# def retrieve_user(userid):
-#     if userid in users:
-#         user = users[userid]
-#         response_obj = jsonify(first_name=user.first_name,
-#                                last_name=user.last_name,
-#                                userid=user.userid,
-#                                groups=list(user.groups))
-#         return response_obj, 200
-#     else:
-#         return 'User does not exist', 404
+def retrieve_user(userid):
+    user = User.query.get(userid)
+    if user is not None:
+        response_obj = jsonify(first_name=user.first_name,
+                               last_name=user.last_name,
+                               userid=user.userid,
+                               groups=map(lambda g: g.name, user.groups))
+        return response_obj, 200
+    else:
+        return 'User does not exist', 404
 
 # def update_user(userid, new_data):
 #     if userid in users and is_valid(new_data):
