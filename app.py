@@ -115,8 +115,8 @@ def users_handler(userid):
     # if request.method == 'PUT':
     #     new_data = request.get_json()
     #     return update_user(userid, new_data)
-    # if request.method == 'DELETE':
-    #     return delete_user(userid)
+    if request.method == 'DELETE':
+        return delete_user(userid)
 
 # @app.route('/groups/<groupname>', methods=['GET', 'PUT', 'DELETE'])
 # def groups_handler(groupname):
@@ -165,16 +165,14 @@ def retrieve_user(userid):
 #     else:
 #         return 'User does not exists or post body is invalid', 404
     
-# def delete_user(userid):
-#     if userid in users:
-#         user = users[userid]
-#         # remove user from groups
-#         for group in user.groups:
-#             groups[group].discard(userid)
-#         del users[userid]
-#         return 'User has been deleted from data store', 200
-#     else:
-#         return 'User does not exist', 404
+def delete_user(userid):
+    user = User.query.get(userid)
+    if user is not None:
+        db.session.delete(user)
+        db.session.commit()
+        return 'User has been deleted from data store', 200
+    else:
+        return 'User does not exist', 404
 
 # ### Groups Handlers
 # def retrieve_group_members(groupname):
