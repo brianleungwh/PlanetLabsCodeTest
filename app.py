@@ -98,15 +98,17 @@ def create_new_user():
 
     return 'User created', 201
 
-# @app.route('/groups', methods=['POST'])
-# def create_new_group():
-#     if request.method == 'POST':
-#         json = request.get_json()
-#         new_group_name = json['name']
-#         if new_group_name in groups:
-#             return 'Group already exists', 409
-#         groups[new_group_name] = set()
-#         return 'New group created', 201
+@app.route('/groups', methods=['POST'])
+def create_new_group():
+    json = request.get_json()
+    new_group_name = json['name']
+    group = Group.query.get(new_group_name)
+    if group is not None:
+        return 'Group already exists', 409
+    group = Group(new_group_name)
+    db.session.add(group)
+    db.session.commit()
+    return 'New group created', 201
 
 @app.route('/users/<userid>', methods=['GET', 'PUT', 'DELETE'])
 def users_handler(userid):
@@ -148,7 +150,6 @@ def update_user(userid, user_record):
         # assuming userid doesn't change but update anyways
         user.userid = user_record['userid']
         
-
         # update new group relationships
         new_group_names = user_record['groups']
         new_groups = []
@@ -157,6 +158,9 @@ def update_user(userid, user_record):
             if group is None:
                 group = Group(group_name)
             new_groups.append(group)
+
+        # sqlalchemy automatically handles removing old and appending new associations
+        # http://docs.sqlalchemy.org/en/rel_1_0/orm/collections.html#custom-collection-implementations
         user.groups = new_groups
 
         db.session.commit()
