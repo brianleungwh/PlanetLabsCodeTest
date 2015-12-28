@@ -122,15 +122,15 @@ def users_handler(userid):
     if request.method == 'DELETE':
         return delete_user(userid)
 
-# @app.route('/groups/<groupname>', methods=['GET', 'PUT', 'DELETE'])
-# def groups_handler(groupname):
-#     if request.method == 'GET':
-#         return retrieve_group_members(groupname)
-#     if request.method == 'PUT':
-#         members = request.get_json()['members']
-#         return update_group_membership(groupname, members)
-#     if request.method == 'DELETE':
-#         return delete_group(groupname)
+@app.route('/groups/<group_name>', methods=['GET', 'PUT', 'DELETE'])
+def groups_handler(group_name):
+    if request.method == 'GET':
+        return retrieve_group_members(group_name)
+    # if request.method == 'PUT':
+    #     members = request.get_json()['members']
+    #     return update_group_membership(group_name, members)
+    # if request.method == 'DELETE':
+    #     return delete_group(group_name)
 
 ### User Handlers
 def retrieve_user(userid):
@@ -179,13 +179,14 @@ def delete_user(userid):
     else:
         return 'User does not exist', 404
 
-# ### Groups Handlers
-# def retrieve_group_members(groupname):
-#     if groupname in groups:
-#         response_obj = jsonify(members=list(groups[groupname]))
-#         return response_obj, 200
-#     else:
-#         return 'Group does not exists', 404
+### Groups Handlers
+def retrieve_group_members(group_name):
+    group = Group.query.get(group_name)
+    if group is not None:
+        response_obj = jsonify(members=map(lambda user: user.userid, group.users))
+        return response_obj, 200
+    else:
+        return 'Group does not exists', 404
 
 # def update_group_membership(groupname, members):
 #     if groupname not in groups:
