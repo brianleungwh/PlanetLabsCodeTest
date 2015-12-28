@@ -126,11 +126,11 @@ def users_handler(userid):
 def groups_handler(group_name):
     if request.method == 'GET':
         return retrieve_group_members(group_name)
-    # if request.method == 'PUT':
-    #     members = request.get_json()['members']
-    #     return update_group_membership(group_name, members)
-    # if request.method == 'DELETE':
-    #     return delete_group(group_name)
+    if request.method == 'PUT':
+        members = request.get_json()['members']
+        return update_group_membership(group_name, members)
+    if request.method == 'DELETE':
+        return delete_group(group_name)
 
 ### User Handlers
 def retrieve_user(userid):
@@ -188,37 +188,26 @@ def retrieve_group_members(group_name):
     else:
         return 'Group does not exists', 404
 
-# def update_group_membership(groupname, members):
-#     if groupname not in groups:
-#         return 'Group does not exists', 404
-#     new_memebership = set(members)
-#     # find users that are in the old list but not in the new list
-#     # and remove groupname from their groups
-#     to_remove_from = groups[groupname].difference(new_memebership)
-#     for user in to_remove_from:
-#         users[user].groups.discard(groupname)
+def update_group_membership(group_name, members):
+    group = Group.query.get(group_name)
+    if group is None:
+        return 'Group does not exists', 404
+    users = []
+    for userid in members:
+        user = User.query.get(userid)
+        users.append(user)
+    # update group memberships
+    group.users = users
+    db.session.commit()
+    return 'Group memberships updated', 200
 
-#     # find users that are in the new list but not in the old list 
-#     # and add groupname to their groups
-#     to_add_to = new_memebership.difference(groups[groupname])
-#     for user in to_add_to:
-#         users[user].groups.add(groupname)
-
-#     # replace group
-#     groups[groupname] = set(members)
-#     return 'Group memberships updated', 200
-
-# def delete_group(groupname):
-#     if groupname not in groups:
-#         return 'Group does not exists', 404
-
-#     # remove group from users' group set
-#     for user in groups[groupname]:
-#         users[user].groups.discard(groupname)
-
-#     # remove group from groups
-#     del groups[groupname]
-#     return 'Group deleted', 200
+def delete_group(group_name):
+    group = Group.query.get(group_name)
+    if group is None:
+        return 'Group does not exists', 404
+    db.session.delete(group)
+    db.session.commit()
+    return 'Group deleted', 200
 
 
 if __name__ == '__main__':
