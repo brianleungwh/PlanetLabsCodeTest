@@ -22,13 +22,13 @@ class User(db.Model):
         self.first_name = first_name
         self.last_name = last_name
 
-    def add(self, user):
-        db.session.add(user)
-        return session_commit()
+    # def add(self, user):
+    #     db.session.add(user)
+    #     return session_commit()
 
-    def delete(self, user):
-        db.session.delete(user)
-        return session_commit()
+    # def delete(self, user):
+    #     db.session.delete(user)
+    #     return session_commit()
 
 
 class Group(db.Model):
@@ -37,25 +37,25 @@ class Group(db.Model):
     def __init__(self, name):
         self.name = name
 
-    def add(self, group):
-        db.session.add(group)
-        return session_commit()
+    # def add(self, group):
+    #     db.session.add(group)
+    #     return session_commit()
 
-    def delete(self, group):
-        db.session.delete(group)
-        return session_commit()
+    # def delete(self, group):
+    #     db.session.delete(group)
+    #     return session_commit()
 
-    def __str__(self):
-        return self.name
+    # def __str__(self):
+    #     return self.name
 
 
-def session_commit():
-    try:
-        db.session.commit()
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        error = str(e)
-        return error
+# def session_commit():
+#     try:
+#         db.session.commit()
+#     except SQLAlchemyError as e:
+#         db.session.rollback()
+#         error = str(e)
+#         return error
 
 db.create_all()
 
@@ -82,11 +82,11 @@ def create_new_user():
     # create model instance
     user = User(userid, first_name, last_name)
     
-    for group in groups:
-        group = Group.query.get(group)
+    for group_name in groups:
+        group = Group.query.get(group_name)
         if group is None:
             # if group doesn't exist already, create it
-            group = Group(group)
+            group = Group(group_name)
         # add association
         user.groups.append(group)
 
@@ -112,9 +112,9 @@ def create_new_user():
 def users_handler(userid):
     if request.method == 'GET':
         return retrieve_user(userid)
-    # if request.method == 'PUT':
-    #     new_data = request.get_json()
-    #     return update_user(userid, new_data)
+    if request.method == 'PUT':
+        new_user_record = request.get_json()
+        return update_user(userid, new_user_record)
     if request.method == 'DELETE':
         return delete_user(userid)
 
@@ -128,7 +128,7 @@ def users_handler(userid):
 #     if request.method == 'DELETE':
 #         return delete_group(groupname)
 
-# ### User Handlers
+### User Handlers
 def retrieve_user(userid):
     user = User.query.get(userid)
     if user is not None:
@@ -140,30 +140,29 @@ def retrieve_user(userid):
     else:
         return 'User does not exist', 404
 
-# def update_user(userid, new_data):
-#     if userid in users and is_valid(new_data):
-#         user = users[userid]
-#         user.first_name = new_data['first_name']
-#         user.last_name = new_data['last_name']
-#         user.userid = new_data['userid']
-#         # handle group references
-#         new_groups = set(new_data['groups'])
-#         groups_to_remove_from = user.groups.difference(new_groups)
-#         groups_to_add_to = new_groups.difference(user.groups)
+def update_user(userid, user_record):
+    user = User.query.get(userid)
+    if user is not None and is_valid(user_record):
+        user.first_name = user_record['first_name']
+        user.last_name = user_record['last_name']
+        # assuming userid doesn't change but update anyways
+        user.userid = user_record['userid']
+        
 
-#         for group in groups_to_remove_from:
-#             groups[group].discard(userid)
+        # update new group relationships
+        new_group_names = user_record['groups']
+        new_groups = []
+        for group_name in new_group_names:
+            group = Group.query.get(group_name)
+            if group is None:
+                group = Group(group_name)
+            new_groups.append(group)
+        user.groups = new_groups
 
-#         for group in groups_to_add_to:
-#             if group not in groups:
-#                 groups[group] = set()
-#             groups[group].add(userid)
-
-#         user.groups = new_groups
-
-#         return 'User updated successfully', 200
-#     else:
-#         return 'User does not exists or post body is invalid', 404
+        db.session.commit()
+        return 'User updated successfully', 200
+    else:
+        return 'User does not exists or post body is invalid', 404
     
 def delete_user(userid):
     user = User.query.get(userid)
