@@ -101,6 +101,8 @@ def create_new_user():
 @app.route('/groups', methods=['POST'])
 def create_new_group():
     json = request.get_json()
+    if "name" not in json:
+        return 'Invalid request body', 400
     new_group_name = json['name']
     group = Group.query.get(new_group_name)
     if group is not None:
