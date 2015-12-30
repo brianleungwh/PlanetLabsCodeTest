@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask.ext.sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config.from_pyfile('config.py')
+app.config.from_object('config')
 db = SQLAlchemy(app)
+
 
 user_group = db.Table('user_group',
     db.Column('userid', db.String(30), db.ForeignKey('user.userid')),
@@ -22,43 +23,13 @@ class User(db.Model):
         self.first_name = first_name
         self.last_name = last_name
 
-    # def add(self, user):
-    #     db.session.add(user)
-    #     return session_commit()
-
-    # def delete(self, user):
-    #     db.session.delete(user)
-    #     return session_commit()
-
-
 class Group(db.Model):
     name = db.Column(db.String(30), primary_key=True)
 
     def __init__(self, name):
         self.name = name
 
-    # def add(self, group):
-    #     db.session.add(group)
-    #     return session_commit()
-
-    # def delete(self, group):
-    #     db.session.delete(group)
-    #     return session_commit()
-
-    # def __str__(self):
-    #     return self.name
-
-
-# def session_commit():
-#     try:
-#         db.session.commit()
-#     except SQLAlchemyError as e:
-#         db.session.rollback()
-#         error = str(e)
-#         return error
-
 db.create_all()
-
 
 def is_valid(data):
     return ("first_name" in data 
@@ -68,10 +39,10 @@ def is_valid(data):
 
 @app.route('/users', methods=['POST'])
 def create_new_user():
+    print('called')
     user = request.get_json()
     if not is_valid(user):
         return 'Invalid user record', 400
-
     userid = user['userid']
     if User.query.get(userid) is not None:
         return 'User already exists', 409
@@ -164,7 +135,6 @@ def update_user(userid, user_record):
         # sqlalchemy automatically handles removing old and appending new associations
         # http://docs.sqlalchemy.org/en/rel_1_0/orm/collections.html#custom-collection-implementations
         user.groups = new_groups
-
         db.session.commit()
         return 'User updated successfully', 200
     else:
@@ -210,6 +180,6 @@ def delete_group(group_name):
     return 'Group deleted', 200
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.debug = True
     app.run()
