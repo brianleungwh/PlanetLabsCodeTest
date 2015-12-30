@@ -10,7 +10,6 @@ def is_valid(data):
 
 @app.route('/users', methods=['POST'])
 def create_new_user():
-    print('called')
     user = request.get_json()
     if not is_valid(user):
         return 'Invalid user record', 400

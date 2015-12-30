@@ -1,19 +1,19 @@
-from flask import json, jsonify
+# from flask import json, jsonify
 from flask.ext.testing import TestCase
-from flask import Flask
-from app import db, User, Group
-import app
-import unittest
-import config
+# from flask import Flask
+# from app import db, User, Group
+# import app
+# import unittest
+# import config
+from app import app, db
 
-class AppTests(TestCase):
 
-    SQLALCHEMY_DATABASE_URI = config.SQLALCHEMY_TEST_DATABASE_URI
-    TESTING = True
+class Tests(TestCase):
 
 
     def create_app(self):
-        return app.app
+        app.config.from_object('config.TestConfiguration')
+        return app
 
     def inject_users_for_testing(self):
         jsmith = User('jsmith', 'Joe', 'Smith')
@@ -34,8 +34,6 @@ class AppTests(TestCase):
         db.session.commit()
 
     def setUp(self):
-        print('called')
-        db.drop_all()
         db.create_all()
         self.inject_users_for_testing()
 
