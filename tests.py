@@ -1,15 +1,11 @@
-# from flask import json, jsonify
+from flask import json, jsonify
 from flask.ext.testing import TestCase
-# from flask import Flask
-# from app import db, User, Group
-# import app
-# import unittest
-# import config
+from app.models import User, Group
 from app import app, db
+import unittest
 
 
 class Tests(TestCase):
-
 
     def create_app(self):
         app.config.from_object('config.TestConfiguration')
@@ -34,6 +30,7 @@ class Tests(TestCase):
         db.session.commit()
 
     def setUp(self):
+        db.drop_all()
         db.create_all()
         self.inject_users_for_testing()
 
@@ -41,135 +38,111 @@ class Tests(TestCase):
         db.session.remove()
         db.drop_all()
 
+    def test_create_user(self):
+        # add one more user
+        post_body = json.dumps(dict(first_name='David',
+                                    last_name='Letterman',
+                                    userid='dletterman',
+                                    groups=['A', 'B']))
+        response = self.client.post('/users', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 201)
 
+        # invalid user record
+        post_body = json.dumps(dict(first_name='Tony',
+                                    userid='tstark'))
+        response = self.client.post('/users', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 400)
 
-    # def setUp(self):
-    #     self.app = server.app.test_client()
-    #     self.app.testing = True
-
-    #     # add users
-    #     post_body = json.dumps(dict(first_name='Steve',
-    #                                 last_name='Rogers',
-    #                                 userid='srogers',
-    #                                 groups=['superheroes', 'leaders', 'avengers']))
-    #     self.app.post('/users', data=post_body, content_type='application/json')
-
-    #     post_body = json.dumps(dict(first_name='Peter',
-    #                                 last_name='Parker',
-    #                                 userid='pparker',
-    #                                 groups=['superheroes']))
-    #     self.app.post('/users', data=post_body, content_type='application/json')
-
-    #     post_body = json.dumps(dict(first_name='Tony',
-    #                                 last_name='Stark',
-    #                                 userid='tstark',
-    #                                 groups=['superheroes', 'avengers', 'CEOs']))
-    #     self.app.post('/users', data=post_body, content_type='application/json')
-
-    #     post_body = json.dumps(dict(first_name='Bruce',
-    #                                 last_name='Banner',
-    #                                 userid='bbanner',
-    #                                 groups=['superheroes', 'avengers']))
-    #     self.app.post('/users', data=post_body, content_type='application/json')
-
-    # def tearDown(self):
-    #     pass
-
-    # def test_create_user(self):
-
-
-    #     # add one more user
-    #     post_body = json.dumps(dict(first_name='Natasha',
-    #                                 last_name='Romanoff',
-    #                                 userid='nromanoff',
-    #                                 groups=['superheroes', 'avengers']))
-    #     response = self.client.post('/users', data=post_body, content_type='application/json')
-    #     self.assertEqual(response.status_code, 201)
-
-    #     # invalid user record
-    #     # post_body = json.dumps(dict(first_name='Tony',
-    #     #                             userid='tstark'))
-    #     # response = self.app.post('/users', data=post_body, content_type='application/json')
-    #     # self.assertEqual(response.status_code, 400)
-
-    #     # posts to an existing user
-    #     # post_body = json.dumps(dict(first_name='Peter',
-    #     #                             last_name='Parker',
-    #     #                             userid='pparker',
-    #     #                             groups=['admins', 'users']))
-    #     # response = self.app.post('/users', data=post_body, content_type='application/json')
-    #     # self.assertEqual(response.status_code, 409)
+        # posts to an existing user
+        post_body = json.dumps(dict(first_name='Joe',
+                                    last_name='Smith',
+                                    userid='jsmith',
+                                    groups=['A', 'B']))
+        response = self.client.post('/users', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 409)
 
     def test_get_user(self):
         # get an existing user
         response = self.client.get('/users/jsmith')
-        # res_body = json.loads(response.data)
 
         self.assertEqual(response.status_code, 200)
-        # self.assertEqual(res_body['first_name'], 'Joe')
-
+        self.assertEqual(response.json, dict(first_name='Joe',
+                                             last_name='Smith',
+                                             userid='jsmith',
+                                             groups=['A', 'B']))
         # get an non-existing user
-        # response = self.app.get('/users/jsmith')
-        # self.assertEqual(response.status_code, 404)
+        response = self.client.get('/users/tstark')
+        self.assertEqual(response.status_code, 404)
 
-    # def test_delete_user(self):
-    #     # delete an existing user
-    #     response = self.app.delete('/users/pparker')
-    #     self.assertEqual(response.status_code, 200)
+    def test_delete_user(self):
+        # delete an existing user
+        response = self.client.delete('/users/shill')
+        self.assertEqual(response.status_code, 200)
 
-    #     # delete an non-existing user (just deleted)
-    #     response = self.app.delete('/users/pparker')
-    #     self.assertEqual(response.status_code, 404)
+        # delete an non-existing user
+        response = self.client.delete('/users/pparker')
+        self.assertEqual(response.status_code, 404)
 
-    # def test_put_user(self):
-    #     # change an existing user
-    #     post_body = json.dumps(dict(first_name='Captain',
-    #                                 last_name='America',
-    #                                 userid='srogers',
-    #                                 groups=['superheroes', 'leaders', 'avengers']))
-    #     response = self.app.put('/users/srogers', data=post_body, content_type='application/json')
-    #     self.assertEqual(response.status_code, 200)
+    def test_put_user(self):
+        # change an existing user
+        post_body = json.dumps(dict(first_name='Johnny',
+                                    last_name='Doe',
+                                    userid='jdoe',
+                                    groups=['A', 'B']))
+        response = self.client.put('/users/jdoe', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
 
-    #     # change an non-existing user
-    #     post_body = json.dumps(dict(first_name='Joe',
-    #                                 last_name='Smith',
-    #                                 userid='jsmith',
-    #                                 groups=['admins', 'users']))
-    #     response = self.app.put('/users/jsmith', data=post_body, content_type='application/json')
-    #     self.assertEqual(response.status_code, 404)
+        # change an non-existing user
+        post_body = json.dumps(dict(first_name='Tony',
+                                    last_name='Stark',
+                                    userid='tstark',
+                                    groups=['D', 'E']))
+        response = self.client.put('/users/tstark', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 404)
 
-    # def test_get_group(self):
-    #     # get an existing group
-    #     response = self.app.get('/groups/avengers')
-    #     res_body = json.loads(response.data)
+    def test_get_group(self):
+        # get an existing group
+        response = self.client.get('/groups/A')
 
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(isinstance(res_body['members'], list), True)
+        self.assertEqual(response.status_code, 200)
+        members = set(response.json['members'])
+        self.assertEqual(members, set(['jsmith', 'shill']))
 
-    #     # get a non-existing group
-    #     response = self.app.get('/groups/admins')
-    #     self.assertEqual(response.status_code, 404)
+        # get a non-existing group
+        response = self.client.get('/groups/F')
+        self.assertEqual(response.status_code, 404)
 
-    # def test_post_group(self):
-    #     # post to an existing group
-    #     post_body = json.dumps(dict(name='avengers'))
-    #     response = self.app.post('/groups', data=post_body, content_type='application/json')
-    #     self.assertEqual(response.status_code, 409)
+    def test_post_group(self):
+        # post to an existing group
+        post_body = json.dumps(dict(name='A'))
+        response = self.client.post('/groups', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 409)
 
-    #     # create a new group
-    #     post_body = json.dumps(dict(name='humans'))
-    #     response = self.app.post('/groups', data=post_body, content_type='application/json')
-    #     self.assertEqual(response.status_code, 201)
+        # create a new group
+        post_body = json.dumps(dict(name='G'))
+        response = self.client.post('/groups', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 201)
 
-    # def test_put_groups(self):
-    #     # avengers: srogers, tstark, bbanner, nromanoff
-    #     post_body = json.dumps(dict(members=['srogers', 'bbanner', 'nromanoff'])) # remove ironman from avengers
-    #     response = self.app.put('/groups/avengers', data=post_body, content_type='application/json')
-    #     self.assertEqual(response.status_code, 200)
+    def test_put_groups(self):
+        post_body = json.dumps(dict(members=['jsmith', 'jdoe', 'shill']))
+        response = self.client.put('/groups/A', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
 
-    # def test_delete_group(self):
-    #     response = self.app.delete('/groups/superheroes')
-    #     self.assertEqual(response.status_code, 200)
+        # print(Group.query.get('A').users)
+        # self.assertEqual(len(Group.query.get('A').users), 3)
+
+        # put to an non-existing group
+        post_body = json.dumps(dict(members=['jsmith', 'jdoe', 'shill']))
+        response = self.client.put('/groups/K', data=post_body, content_type='application/json')
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_group(self):
+        response = self.client.delete('/groups/A')
+        self.assertEqual(response.status_code, 200)
+
+        # delete a non-existing group
+        response = self.client.delete('/groups/K')
+        self.assertEqual(response.status_code, 404)
 
 if __name__ == '__main__':
     unittest.main()
