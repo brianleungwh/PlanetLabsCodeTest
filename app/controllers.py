@@ -1,12 +1,13 @@
 from flask import request, jsonify
-from app import app
 from models import db, User, Group
+from app import app
 
 def is_valid(data):
     return ("first_name" in data 
         and "last_name" in data 
         and "userid" in data 
         and "groups" in data)
+    
 
 @app.route('/users', methods=['POST'])
 def create_new_user():
@@ -39,20 +40,6 @@ def create_new_user():
 
     return 'User created', 201
 
-@app.route('/groups', methods=['POST'])
-def create_new_group():
-    json = request.get_json()
-    if "name" not in json:
-        return 'Invalid request body', 400
-    new_group_name = json['name']
-    group = Group.query.get(new_group_name)
-    if group is not None:
-        return 'Group already exists', 409
-    group = Group(new_group_name)
-    db.session.add(group)
-    db.session.commit()
-    return 'New group created', 201
-
 @app.route('/users/<userid>', methods=['GET', 'PUT', 'DELETE'])
 def users_handler(userid):
     if request.method == 'GET':
@@ -62,16 +49,6 @@ def users_handler(userid):
         return update_user(userid, new_user_record)
     if request.method == 'DELETE':
         return delete_user(userid)
-
-@app.route('/groups/<group_name>', methods=['GET', 'PUT', 'DELETE'])
-def groups_handler(group_name):
-    if request.method == 'GET':
-        return retrieve_group_members(group_name)
-    if request.method == 'PUT':
-        members = request.get_json()['members']
-        return update_group_membership(group_name, members)
-    if request.method == 'DELETE':
-        return delete_group(group_name)
 
 ### User Handlers
 def retrieve_user(userid):
@@ -118,6 +95,32 @@ def delete_user(userid):
         return 'User has been deleted from data store', 200
     else:
         return 'User does not exist', 404
+
+@app.route('/groups', methods=['POST'])
+def create_new_group():
+    json = request.get_json()
+    if "name" not in json:
+        return 'Invalid request body', 400
+    new_group_name = json['name']
+    group = Group.query.get(new_group_name)
+    if group is not None:
+        return 'Group already exists', 409
+    group = Group(new_group_name)
+    db.session.add(group)
+    db.session.commit()
+    return 'New group created', 201
+
+
+@app.route('/groups/<group_name>', methods=['GET', 'PUT', 'DELETE'])
+def groups_handler(group_name):
+    if request.method == 'GET':
+        return retrieve_group_members(group_name)
+    if request.method == 'PUT':
+        members = request.get_json()['members']
+        return update_group_membership(group_name, members)
+    if request.method == 'DELETE':
+        return delete_group(group_name)
+
 
 ### Groups Handlers
 def retrieve_group_members(group_name):
